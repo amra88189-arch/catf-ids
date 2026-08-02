@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CATF-IDS — Context-Adaptive Threat Detection for Critical Infrastructure</title>
+<meta name="description" content="CATF-IDS fuses network, IoT, log, and endpoint signals into one adaptive, explainable intrusion detection verdict for critical infrastructure.">
+<style>
+  :root{
+    --bg:#0a1220; --panel:#0f1c30; --panel2:#16233a; --pill:#152238;
+    --cyan:#22d3ee; --cyan-soft:#7dd3e8; --amber:#f59e0b; --amber2:#fbbf24;
+    --text:#eaf6fb; --body:#c7cfdd; --muted:#7a8ba6; --muted2:#7dd3e8;
+    --green:#22c55e; --purple:#a78bfa;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg); color:var(--body);
+    font-family:'Segoe UI', Arial, sans-serif;
+    line-height:1.6;
+  }
+  a{color:var(--cyan); text-decoration:none;}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 24px;}
+
+  /* nav */
+  nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(10,18,32,0.92); backdrop-filter:blur(6px);
+    border-bottom:1px solid #16273f;
+  }
+  nav .wrap{display:flex; align-items:center; justify-content:space-between; height:64px;}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:800; color:var(--text); letter-spacing:1px;}
+  .brand svg{width:34px; height:34px;}
+  nav ul{list-style:none; display:flex; gap:26px;}
+  nav ul a{color:var(--body); font-size:14px; font-weight:600;}
+  nav ul a:hover{color:var(--cyan);}
+  .nav-toggle{display:none;}
+
+  /* hero */
+  header.hero{
+    padding:90px 0 70px; text-align:center; position:relative; overflow:hidden;
+  }
+  header.hero::before{
+    content:""; position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse 700px 400px at 50% -10%, rgba(34,211,238,0.10), transparent 70%);
+    pointer-events:none;
+  }
+  .eye-logo{width:200px; height:auto; margin:0 auto 18px;}
+  h1.title{
+    font-size:clamp(40px,7vw,72px); font-weight:800; color:var(--text); letter-spacing:1px;
+  }
+  .subtitle{color:var(--cyan-soft); font-size:16px; margin-top:10px;}
+  .tagline{
+    color:var(--amber); font-weight:700; font-style:italic; font-size:20px;
+    letter-spacing:1px; margin-top:18px;
+  }
+  .hero-credits{margin-top:28px; color:var(--muted); font-size:14px;}
+  .hero-credits strong{color:var(--text);}
+  .cta-row{margin-top:34px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap;}
+  .btn{
+    display:inline-block; padding:13px 28px; border-radius:999px; font-weight:700; font-size:14px;
+    border:1.5px solid var(--cyan); transition:transform .15s ease, background .15s ease;
+  }
+  .btn:hover{transform:translateY(-2px);}
+  .btn-primary{background:var(--cyan); color:#04222c;}
+  .btn-primary:hover{background:var(--cyan-soft);}
+  .btn-ghost{color:var(--cyan); background:transparent;}
+  .btn-ghost:hover{background:rgba(34,211,238,0.1);}
+
+  /* modality row */
+  .modalities{display:flex; justify-content:center; gap:40px; flex-wrap:wrap; margin-top:56px;}
+  .modality{text-align:center; width:110px;}
+  .modality .ic{
+    width:56px; height:56px; border-radius:50%; margin:0 auto 10px;
+    display:flex; align-items:center; justify-content:center;
+    border:1.5px solid var(--cyan); background:var(--panel2);
+  }
+  .modality span{font-size:12px; font-weight:700; color:var(--text); letter-spacing:.5px;}
+
+  /* flow strip */
+  .flow{padding:60px 0 20px;}
+  .flow-strip{
+    display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;
+  }
+  .flow-step{text-align:center; width:100px;}
+  .flow-step .circ{
+    width:76px; height:76px; border-radius:50%; margin:0 auto 10px;
+    border:1.5px solid var(--cyan); background:var(--panel2);
+    display:flex; align-items:center; justify-content:center; font-size:22px; color:var(--cyan);
+  }
+  .flow-step span{font-size:12px; font-weight:700; color:var(--text); letter-spacing:.5px;}
+  .flow-arrow{color:var(--cyan); font-size:22px; opacity:.6;}
+
+  /* sections */
+  section{padding:70px 0;}
+  section.alt{background:var(--panel);}
+  .eyebrow{color:var(--amber); font-weight:700; letter-spacing:2px; font-size:13px; margin-bottom:10px;}
+  h2{color:var(--text); font-size:30px; margin-bottom:20px;}
+  p.lead{color:var(--body); font-size:17px; max-width:780px;}
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:26px;}
+  .card{
+    background:var(--panel2); border:1px solid #1c2f4a; border-radius:12px; padding:22px 24px;
+  }
+  .card h3{color:var(--text); font-size:16px; margin-bottom:8px;}
+  .card p{color:var(--body); font-size:14.5px;}
+  .problem-list{margin-top:26px; display:flex; flex-direction:column; gap:14px;}
+  .problem-item{
+    display:flex; gap:14px; align-items:flex-start; background:var(--panel2);
+    border:1px solid #1c2f4a; border-radius:10px; padding:16px 18px;
+  }
+  .problem-item .num{
+    flex:0 0 auto; width:28px; height:28px; border-radius:50%; background:var(--bg);
+    border:1.5px solid var(--amber); color:var(--amber); font-weight:800; font-size:13px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .problem-item p{color:var(--body); font-size:15px;}
+
+  .layers-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:30px;
+  }
+  .layer{
+    background:var(--pill); border:1px solid var(--cyan); border-radius:12px; padding:16px 18px;
+  }
+  .layer .n{color:var(--amber); font-weight:800; font-size:13px; letter-spacing:1px;}
+  .layer h4{color:var(--text); font-size:15px; margin:4px 0 6px;}
+  .layer p{color:var(--muted); font-size:13px;}
+
+  .stake-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:30px;}
+  .stake{text-align:center; background:var(--panel2); border-radius:12px; padding:24px 14px; border:1px solid #1c2f4a;}
+  .stake .ic{font-size:28px; margin-bottom:10px;}
+  .stake span{color:var(--text); font-size:13.5px; font-weight:700;}
+
+  .tech-pills{display:flex; flex-wrap:wrap; gap:10px; margin-top:24px;}
+  .pill{
+    padding:9px 18px; border-radius:999px; background:var(--pill); border:1px solid var(--cyan);
+    color:var(--text); font-size:13.5px; font-weight:600;
+  }
+
+  .demo-box{
+    background:linear-gradient(135deg, rgba(34,211,238,0.08), rgba(245,158,11,0.06));
+    border:1.5px dashed var(--cyan); border-radius:16px; padding:40px; text-align:center; margin-top:26px;
+  }
+  .demo-box .badge{
+    display:inline-block; font-size:11px; font-weight:800; letter-spacing:1.5px;
+    color:var(--amber); border:1px solid var(--amber); border-radius:999px; padding:5px 14px; margin-bottom:16px;
+  }
+  .demo-box h3{color:var(--text); font-size:20px; margin-bottom:10px;}
+  .demo-box p{color:var(--muted); font-size:14.5px; max-width:560px; margin:0 auto;}
+
+  .team-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:28px;}
+  .member{background:var(--panel2); border:1px solid #1c2f4a; border-radius:12px; padding:22px 14px; text-align:center;}
+  .member .av{
+    width:56px; height:56px; border-radius:50%; background:var(--bg); border:1.5px solid var(--cyan);
+    margin:0 auto 12px; display:flex; align-items:center; justify-content:center; color:var(--cyan); font-weight:800;
+  }
+  .member strong{color:var(--text); font-size:14px; display:block;}
+  .supervisor{margin-top:24px; text-align:center; color:var(--body); font-size:14.5px;}
+  .supervisor strong{color:var(--text);}
+
+  footer{padding:50px 0; text-align:center; border-top:1px solid #16273f; color:var(--muted); font-size:13px;}
+  footer .logos{display:flex; justify-content:center; gap:20px; margin-bottom:18px; opacity:.85;}
+  footer .logos img{height:46px;}
+
+  @media (max-width:760px){
+    .grid-2{grid-template-columns:1fr;}
+    .layers-grid{grid-template-columns:1fr 1fr;}
+    .stake-grid{grid-template-columns:1fr 1fr;}
+    .team-grid{grid-template-columns:1fr 1fr;}
+    nav ul{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">
+      <svg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+        <path d="M25,26 Q45,15 60,14 Q70,13 78,8" stroke="#22d3ee" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M12,28 Q40,18 60,17 Q80,18 88,28 Q80,38 60,39 Q40,38 12,28 Z" fill="#0b1830" stroke="#22d3ee" stroke-width="2"/>
+        <circle cx="60" cy="28" r="10" fill="#f59e0b"/>
+        <circle cx="60" cy="28" r="4" fill="#050302"/>
+      </svg>
+      CATF-IDS
+    </div>
+    <ul>
+      <li><a href="#problem">Problem</a></li>
+      <li><a href="#solution">Solution</a></li>
+      <li><a href="#stakeholders">Stakeholders</a></li>
+      <li><a href="#demo">Live Demo</a></li>
+      <li><a href="#team">Team</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <svg class="eye-logo" viewBox="0 0 850 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="irisGrad" x1="30%" y1="20%" x2="75%" y2="90%">
+          <stop offset="0%" stop-color="#fbbf24"/>
+          <stop offset="55%" stop-color="#b45309"/>
+          <stop offset="100%" stop-color="#2a1608"/>
+        </linearGradient>
+      </defs>
+      <path d="M345,87 Q390,52 425,50 Q460,49 495,37 L503,28 L491,44 Q460,60 425,62 Q392,65 358,92 Z" fill="#2a3038" stroke="#22d3ee" stroke-width="1.2"/>
+      <path d="M350,88 Q392,54 425,52 Q458,51 498,34" stroke="#22d3ee" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.9"/>
+      <path d="M315,100 Q370,80 425,78 Q480,80 535,100 Q480,120 425,122 Q370,120 315,100 Z" fill="#0b1830" stroke="#22d3ee" stroke-width="2"/>
+      <circle cx="425" cy="101" r="30" fill="url(#irisGrad)" stroke="#1a0f05" stroke-width="1"/>
+      <circle cx="425" cy="101" r="11" fill="#050302"/>
+      <circle cx="425" cy="101" r="11.5" fill="none" stroke="#f59e0b" stroke-width="1.3" opacity="0.9"/>
+      <path d="M414,90 L419,87 L417,93 L411,94 Z" fill="#f8fafc" opacity="0.9"/>
+    </svg>
+    <h1 class="title">CATF-IDS</h1>
+    <div class="subtitle">Context-Adaptive Threat Detection for Critical Infrastructure</div>
+    <div class="tagline">DETECT TODAY, ADAPT TOMORROW</div>
+
+    <div class="modalities">
+      <div class="modality"><div class="ic">📡</div><span>NETWORK</span></div>
+      <div class="modality"><div class="ic">📟</div><span>IoT SENSORS</span></div>
+      <div class="modality"><div class="ic">🗒️</div><span>SYSTEM LOGS</span></div>
+      <div class="modality"><div class="ic">💻</div><span>ENDPOINT</span></div>
+    </div>
+
+    <div class="hero-credits">
+      <strong>Abdlrahman Amr</strong> · <strong>Ahmed Mamdouh</strong> · <strong>Seifeldein Sayed</strong> · <strong>Mohamed Othman</strong><br>
+      Supervised by <strong>Prof. Iman Sanad</strong> — Networks &amp; Cyber Security Program, Cairo University
+    </div>
+
+    <div class="cta-row">
+      <a class="btn btn-primary" href="catf-ids_full_report.pdf" target="_blank">Read the Full Report</a>
+      <a class="btn btn-ghost" href="#demo">See Live Demo status</a>
+    </div>
+  </div>
+</header>
+
+<section class="flow">
+  <div class="wrap">
+    <div class="flow-strip">
+      <div class="flow-step"><div class="circ">◈</div><span>SENSE</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="circ">✚</div><span>FUSE</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="circ">◉</div><span>DECIDE</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="circ">◎</div><span>ESCALATE</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="circ">💬</div><span>EXPLAIN</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="problem">
+  <div class="wrap">
+    <div class="eyebrow">THE PROBLEM</div>
+    <h2>Network-only detection isn't enough anymore</h2>
+    <p class="lead">IIoT connects physical machines to networks. An attack that used to just mean stolen data can now mean physical damage — and today's detectors aren't built for that reality.</p>
+    <div class="problem-list">
+      <div class="problem-item"><div class="num">1</div><p>IIoT links physical machines to networks — attacks can cause real harm, not just data loss.</p></div>
+      <div class="problem-item"><div class="num">2</div><p>All published IDS systems use network traffic only — ignoring sensors, logs, and telemetry.</p></div>
+      <div class="problem-item"><div class="num">3</div><p>Per-event classifiers miss multi-stage campaigns that unfold across many events over time.</p></div>
+      <div class="problem-item"><div class="num">4</div><p>Public datasets are ~82% attacks — a headline "99% accuracy" hides the real false-positive cost in production.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="objective">
+  <div class="wrap">
+    <div class="eyebrow">OBJECTIVE</div>
+    <h2>One verdict, fused from every signal</h2>
+    <p class="lead">Fuse all four signal types into one verdict, catch attacks that unfold across many events — not just one moment — and explain every alert in plain terms security teams can act on.</p>
+  </div>
+</section>
+
+<section id="solution">
+  <div class="wrap">
+    <div class="eyebrow">THE SOLUTION</div>
+    <h2>A 9-layer governance stack behind every verdict</h2>
+    <p class="lead">CATF-IDS doesn't just classify a single event — it runs a layered pipeline that scores, fuses, contextualizes, and escalates risk continuously, then explains the result.</p>
+    <div class="layers-grid">
+      <div class="layer"><div class="n">01</div><h4>Layer Models (RF)</h4><p>Per-modality random-forest models score network, IoT, log, and endpoint data independently.</p></div>
+      <div class="layer"><div class="n">02</div><h4>Behavioral Physics</h4><p>Flags physically-implausible or anomalous device states, not just statistical outliers.</p></div>
+      <div class="layer"><div class="n">03</div><h4>Fusion Meta-Classifier</h4><p>Combines the four modality scores into a single weighted risk verdict.</p></div>
+      <div class="layer"><div class="n">04</div><h4>Modality Trust Tracker</h4><p>Dynamically re-weights each data source based on its recent reliability.</p></div>
+      <div class="layer"><div class="n">05</div><h4>Policy Engine</h4><p>Translates the fused risk score into concrete, actionable responses.</p></div>
+      <div class="layer"><div class="n">06</div><h4>Adaptive Threshold</h4><p>Continuously tunes the alert cutoff instead of relying on a fixed threshold.</p></div>
+      <div class="layer"><div class="n">07</div><h4>Contextual Threshold Engine</h4><p>Adjusts sensitivity based on operational context — site, time, load.</p></div>
+      <div class="layer"><div class="n">08</div><h4>Energy FSM</h4><p>A four-state escalation machine (Safe → Suspicious → Elevated → Critical) that tracks sustained risk over time.</p></div>
+      <div class="layer"><div class="n">09</div><h4>Behavioral Memory</h4><p>Clusters past incidents to recognize multi-stage campaigns as they unfold.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="stakeholders">
+  <div class="wrap">
+    <div class="eyebrow">WHO IT'S FOR</div>
+    <h2>Built for the sites that can't afford blind spots</h2>
+    <p class="lead">Security teams and facility operators at critical infrastructure sites where a missed intrusion means more than a data breach.</p>
+    <div class="stake-grid">
+      <div class="stake"><div class="ic">✈️</div><span>Airports</span></div>
+      <div class="stake"><div class="ic">🏭</div><span>Manufacturing Plants</span></div>
+      <div class="stake"><div class="ic">🏢</div><span>Smart Buildings</span></div>
+      <div class="stake"><div class="ic">☢️</div><span>Power &amp; Energy Facilities</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="technologies">
+  <div class="wrap">
+    <div class="eyebrow">BUILT WITH</div>
+    <h2>Technologies</h2>
+    <div class="tech-pills">
+      <span class="pill">Python</span>
+      <span class="pill">scikit-learn</span>
+      <span class="pill">pandas</span>
+      <span class="pill">LIME</span>
+      <span class="pill">FastAPI</span>
+    </div>
+  </div>
+</section>
+
+<section class="alt" id="demo">
+  <div class="wrap">
+    <div class="eyebrow">LIVE DEMO</div>
+    <h2>See CATF-IDS in action</h2>
+    <div class="demo-box">
+      <div class="badge">COMING SOON</div>
+      <h3>The full interactive demo is in progress</h3>
+      <p>We're building a live, end-to-end demo where you can feed CATF-IDS sample traffic and watch it fuse, escalate, and explain a verdict in real time. Check back soon, or read the full report below in the meantime.</p>
+    </div>
+  </div>
+</section>
+
+<section id="team">
+  <div class="wrap">
+    <div class="eyebrow">THE TEAM</div>
+    <h2>Who built this</h2>
+    <div class="team-grid">
+      <div class="member"><div class="av">AA</div><strong>Abdlrahman Amr</strong></div>
+      <div class="member"><div class="av">AM</div><strong>Ahmed Mamdouh</strong></div>
+      <div class="member"><div class="av">SS</div><strong>Seifeldein Sayed</strong></div>
+      <div class="member"><div class="av">MO</div><strong>Mohamed Othman</strong></div>
+    </div>
+    <div class="supervisor">Supervised by <strong>Prof. Iman Sanad</strong> — Networks &amp; Cyber Security Program, Cairo University</div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>CATF-IDS — Graduation Project, Networks &amp; Cyber Security Program, Faculty of Computers &amp; Artificial Intelligence, Cairo University</p>
+    <p style="margin-top:8px;"><a href="catf-ids_full_report.pdf" target="_blank">Download full report (PDF)</a></p>
+  </div>
+</footer>
+
+</body>
+</html>
