@@ -261,7 +261,8 @@ function incList(){
     <table style="margin-top:10px">
      <tr><td class="mu">severity</td><td class="num">${j.severity||'—'}</td><td class="mu" style="padding-left:20px">confidence</td><td class="num">${j.confidence}</td></tr>
      <tr><td class="mu">recommended action</td><td class="num">${j.recommended_action||'—'}</td><td class="mu" style="padding-left:20px">from memory</td><td class="num">${j.from_memory?'yes [MEM]':'no'}</td></tr>
-     <tr><td class="mu">top signal</td><td class="num">${j.top_signal||'—'}</td><td class="mu" style="padding-left:20px">thresholds</td><td class="num mono">τ_hi ${j.threshold_used?j.threshold_used.tau_high:'—'} / τ_lo ${j.threshold_used?j.threshold_used.tau_low:'—'}</td></tr>
+     <tr><td class="mu">top signal</td><td class="num">${j.top_signal&&j.top_signal.modality?`${j.top_signal.modality} (${j.top_signal.score})`:'—'}</td><td class="mu" style="padding-left:20px">thresholds</td><td class="num mono">τ_hi ${j.threshold_used?j.threshold_used.tau_high:'—'} / τ_lo ${j.threshold_used?j.threshold_used.tau_low:'—'}</td></tr>
+     <tr><td class="mu">score position</td><td colspan="3" class="num">${j.score_position||'—'}</td></tr>
      <tr><td class="mu">engine reason</td><td colspan="3" class="num mono" style="font-size:11px">${j.reason}</td></tr>
     </table>
    </div></div>`}
