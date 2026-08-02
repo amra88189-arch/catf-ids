@@ -23,23 +23,33 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .brand span{font-size:16px;font-weight:600;letter-spacing:1px}
 @keyframes lookAround{0%,18%{transform:translateX(0)}26%,40%{transform:translateX(-6px)}48%,66%{transform:translateX(6px)}74%,100%{transform:translateX(0)}}
 @keyframes blinkLid{0%,90%,100%{transform:scaleY(0)}93%,96%{transform:scaleY(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
 .eyeball{animation:lookAround 6s ease-in-out infinite}
 .eyelid{transform-origin:50% 0;animation:blinkLid 6s linear infinite}
 main{max-width:1180px;margin:0 auto;padding:20px 24px 60px}
+.hero{text-align:center;padding:26px 0 8px}
+.hero h1{font-size:38px;letter-spacing:6px;font-weight:700}
+.hero .sub{font-size:14px;color:var(--cyan);margin-top:6px;letter-spacing:1px}
+.hero .tag{font-size:13px;color:var(--amber);font-style:italic;font-weight:600;margin-top:4px;letter-spacing:2px}
+.livebar{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-size:12.5px;padding:6px 18px;border-radius:16px;border:1px solid var(--line);background:var(--panel)}
+.livebar .dot{width:9px;height:9px;border-radius:50%}
+.livebar.on{border-color:var(--green)}
+.livebar.on .dot{background:var(--green);animation:pulse 1.6s infinite}
+.livebar.off .dot{background:var(--mut)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 .card .lbl{font-size:11px;color:var(--mut);letter-spacing:.5px}
 .card .val{font-size:22px;font-weight:600;margin-top:4px}
 .card .sub{font-size:11px;color:var(--mut);margin-top:4px}
 .sect{font-size:11px;color:var(--mut);letter-spacing:1.5px;margin:22px 0 10px}
-.fleet{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
-.dev{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 8px;text-align:center;cursor:pointer;transition:transform .15s,border-color .15s}
-.dev:hover{transform:translateY(-3px);border-color:var(--blue)}
-.dev i{font-size:30px}
-.dev .nm{font-size:13px;margin-top:8px;color:var(--txt)}
-.dev .st{font-size:11px;margin-top:3px}
+.fleet{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.dev{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px 8px;text-align:center;cursor:pointer;transition:transform .15s,border-color .15s}
+.dev:hover{transform:translateY(-4px);border-color:var(--blue)}
+.dev i{font-size:46px}
+.dev .nm{font-size:14px;margin-top:10px;color:var(--txt);font-weight:600}
+.dev .st{font-size:11.5px;margin-top:4px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media(max-width:820px){.grid2{grid-template-columns:1fr}}
+@media(max-width:820px){.grid2{grid-template-columns:1fr}.hero h1{font-size:28px;letter-spacing:3px}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
 .panel h3{font-size:11px;color:var(--mut);letter-spacing:1.5px;font-weight:600;margin-bottom:10px}
 .feed .al{border-left:3px solid var(--amber);padding:6px 10px;margin-bottom:8px;background:rgba(240,166,58,.04)}
@@ -48,7 +58,7 @@ main{max-width:1180px;margin:0 auto;padding:20px 24px 60px}
 .feed .al .t2{font-size:11px;color:var(--mut);margin-top:2px}
 .devhead{display:flex;align-items:center;gap:16px;margin:6px 0 18px;flex-wrap:wrap}
 .devicon{width:64px;height:64px;border-radius:14px;background:var(--panel);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
-.devicon i{font-size:34px}
+.devicon i{font-size:38px}
 .devhead .nm{font-size:20px;font-weight:600}
 .devhead .ip{font-size:12px;color:var(--mut);margin-top:2px}
 .badge{margin-left:auto;font-size:13px;padding:5px 14px;border-radius:14px;border:1px solid}
@@ -56,6 +66,8 @@ main{max-width:1180px;margin:0 auto;padding:20px 24px 60px}
 .btn:hover{filter:brightness(1.25)}
 .btn.ctl{border:1px solid var(--blue);color:var(--blue);background:rgba(127,180,232,.07)}
 .btn.stp{border:1px solid var(--red);color:var(--red);background:rgba(224,86,74,.08);font-weight:600}
+.btn.grn{border:1px solid var(--green);color:var(--green);background:rgba(74,214,160,.07)}
+.btn.amb{border:1px solid var(--amber);color:var(--amber);background:rgba(240,166,58,.07)}
 table{width:100%;border-collapse:collapse;font-size:12px}
 td,th{padding:4px 2px;text-align:left}
 th{color:var(--mut);font-weight:400;font-size:11px}
@@ -67,6 +79,19 @@ th{color:var(--mut);font-weight:400;font-size:11px}
 .ok{color:var(--green)}.wr{color:var(--amber)}.er{color:var(--red)}.mu{color:var(--mut)}
 .notice{border:1px solid var(--blue);background:rgba(127,180,232,.08);color:var(--blue);border-radius:9px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
 .notice.stop{border-color:var(--red);background:rgba(224,86,74,.08);color:var(--red)}
+.inc{border:1px solid var(--line);border-radius:9px;margin-bottom:8px;overflow:hidden;cursor:pointer}
+.inc .head{display:flex;align-items:center;gap:12px;padding:10px 14px;font-size:13px}
+.inc .head:hover{background:rgba(127,180,232,.04)}
+.inc .det{display:none;border-top:1px solid var(--line);padding:12px 16px;background:var(--panel2);font-size:12.5px}
+.inc.open .det{display:block}
+.vbadge{font-size:11px;padding:2px 10px;border-radius:10px;font-weight:600}
+.v-ATTACK{background:rgba(224,86,74,.15);color:var(--red)}
+.v-SUSPICIOUS{background:rgba(240,166,58,.15);color:var(--amber)}
+.v-NORMAL{background:rgba(74,214,160,.13);color:var(--green)}
+.lay{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.lay .ln{width:150px;color:var(--dim);font-size:11.5px}
+.lay .track{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.lay .fill{height:100%;border-radius:4px}
 footer{border-top:1px solid var(--line);padding:16px 24px;text-align:center;font-size:12px;color:var(--mut)}
 </style>
 </head>
@@ -88,9 +113,12 @@ footer{border-top:1px solid var(--line);padding:16px 24px;text-align:center;font
   </div>
 </header>
 <main id="app"></main>
-<footer>CATF-IDS demo — simulated replay of TON_IoT telemetry · Graduation Project, Faculty of Computers &amp; AI, Cairo University · <a href="index.html">back to site</a></footer>
+<footer>CATF-IDS demo — TON_IoT fleet · Graduation Project, Faculty of Computers &amp; AI, Cairo University · <a href="index.html">back to site</a></footer>
 
 <script>
+const API='http://127.0.0.1:8000';
+let LIVE=false, INCIDENTS=[], OPENINC=null, BUSY=false;
+
 const ICONS={fridge:'ti-fridge',garage:'ti-door',gps:'ti-gps',modbus:'ti-cpu',light:'ti-bulb',thermostat:'ti-temperature',weather:'ti-cloud'};
 const now=()=>new Date().toLocaleTimeString('en-GB');
 function rnd(a,b,d=1){return +(a+Math.random()*(b-a)).toFixed(d)}
@@ -99,38 +127,45 @@ const D={
  fridge:{name:'Smart fridge',ip:'192.168.1.40',proto:'mqtt',status:'alert',risk:.84,trust:.55,
   tel:()=>({fridge_temperature:S.fridge.attack? rnd(-13,-11):rnd(3.5,4.5),temp_condition:S.fridge.attack?'high':'normal'}),
   expected:'1.0 – 6.5 °C',
+  live:()=>({current_temp:S.fridge.attack?-12.1:4.0,phys_delta:S.fridge.attack?9.5:0.3,phys_delta_abs:S.fridge.attack?9.5:0.3,net_duration:S.fridge.attack?24:0.4,net_bytes:S.fridge.attack?820000:2100,net_proto_enc:1,disk_write:1400,cpu_usage:52}),
   explain:{text:'Temperature dropped to −12.1 °C — physically implausible for this unit — while two outbound flows to an unknown host appeared. Pattern matches a spoofed-telemetry campaign (Behavioral Memory cluster #12).',
    feats:[['temp_implausible',.41,'red'],['conn_state_S0',.27,'amber'],['mqtt_reconnects',.16,'amber']]},
   net:[['192.168.1.190:1883','mqtt','SF','2.1k','ok'],['192.168.1.30:1883','mqtt','SF','1.8k','ok'],['45.33.9.12:6667','tcp','S0','640','flagged'],['45.33.9.12:6667','tcp','REJ','320','flagged'],['192.168.1.1:53','dns','SF','180','ok']]},
  garage:{name:'Garage door',ip:'192.168.1.41',proto:'mqtt',status:'normal',risk:.12,trust:.93,
   tel:()=>({door_state:Math.random()>.9?'open':'closed',sphone_signal:rnd(-71,-64,0)+' dBm'}),
   expected:'closed outside work hours',
+  live:()=>({current_temp:22,phys_delta:0.1,phys_delta_abs:0.1,net_duration:0.3,net_bytes:1200,net_proto_enc:1,disk_write:1300,cpu_usage:48}),
   explain:{text:'No active alert. Door state transitions match the site schedule; signal strength stable.',feats:[['schedule_match',.05,'green'],['signal_stable',.04,'green']]},
   net:[['192.168.1.190:1883','mqtt','SF','1.2k','ok'],['192.168.1.1:53','dns','SF','120','ok']]},
  gps:{name:'GPS tracker',ip:'192.168.1.42',proto:'mqtt',status:'watch',risk:.66,trust:.78,
   tel:()=>({latitude:(30.028+Math.random()*.004).toFixed(5),longitude:(31.208+Math.random()*.004).toFixed(5)}),
   expected:'inside site geofence',
+  live:()=>({current_temp:22,phys_delta:2.4,phys_delta_abs:2.4,net_duration:8,net_bytes:96000,net_proto_enc:2,disk_write:1500,cpu_usage:61}),
   explain:{text:'Repeated inbound connection attempts on a backdoor port were rejected. Position remains inside the geofence — device on elevated watch, threshold tightened by the Contextual Engine.',
    feats:[['backdoor_attempts',.33,'amber'],['rej_conn_ratio',.21,'amber'],['geo_ok',-.10,'green']]},
   net:[['192.168.1.190:1883','mqtt','SF','950','ok'],['102.44.7.8:5555','tcp','REJ','410','flagged'],['102.44.7.8:5555','tcp','REJ','380','flagged']]},
  modbus:{name:'Modbus unit',ip:'192.168.1.43',proto:'modbus/tcp',status:'normal',risk:.18,trust:.9,
   tel:()=>({FC1_read_coil:rnd(0,1,0),FC2_discrete:rnd(0,1,0),FC3_holding:rnd(31200,31600,0),FC4_input:rnd(11800,12400,0)}),
   expected:'register values in band',
+  live:()=>({current_temp:24,phys_delta:0.2,phys_delta_abs:0.2,net_duration:0.6,net_bytes:3400,net_proto_enc:3,disk_write:1350,cpu_usage:50}),
   explain:{text:'No active alert. Register reads within the learned operating band; polling cadence normal.',feats:[['reg_in_band',.06,'green'],['cadence_ok',.03,'green']]},
   net:[['192.168.1.152:502','modbus','SF','3.4k','ok'],['192.168.1.30:502','modbus','SF','2.9k','ok']]},
  light:{name:'Motion light',ip:'192.168.1.44',proto:'mqtt',status:'normal',risk:.09,trust:.95,
   tel:()=>({motion_status:Math.random()>.7?'detected':'clear',light_status:Math.random()>.5?'on':'off'}),
   expected:'motion→light correlation',
+  live:()=>({current_temp:21,phys_delta:0.1,phys_delta_abs:0.1,net_duration:0.2,net_bytes:800,net_proto_enc:1,disk_write:1280,cpu_usage:45}),
   explain:{text:'No active alert. Light toggles correlate with motion events as expected.',feats:[['correlation_ok',.04,'green']]},
   net:[['192.168.1.190:1883','mqtt','SF','800','ok']]},
  thermostat:{name:'Thermostat',ip:'192.168.1.45',proto:'mqtt',status:'normal',risk:.14,trust:.92,
   tel:()=>({current_temperature:rnd(21.5,23.5),thermostat_status:'on'}),
   expected:'20 – 26 °C',
+  live:()=>({current_temp:22.4,phys_delta:0.4,phys_delta_abs:0.4,net_duration:0.5,net_bytes:1100,net_proto_enc:1,disk_write:1420,cpu_usage:49}),
   explain:{text:'No active alert. Room temperature tracking setpoint; duty cycle nominal.',feats:[['temp_in_band',.05,'green']]},
   net:[['192.168.1.190:1883','mqtt','SF','1.1k','ok'],['192.168.1.1:53','dns','SF','90','ok']]},
  weather:{name:'Weather station',ip:'192.168.1.46',proto:'mqtt',status:'normal',risk:.11,trust:.94,
   tel:()=>({temperature:rnd(28,31),pressure:rnd(1008,1012,0)+' hPa',humidity:rnd(38,46,0)+' %'}),
   expected:'sensor drift < 2%',
+  live:()=>({current_temp:29,phys_delta:0.5,phys_delta_abs:0.5,net_duration:0.4,net_bytes:1600,net_proto_enc:1,disk_write:1380,cpu_usage:47}),
   explain:{text:'No active alert. Readings consistent with the co-located reference sensor.',feats:[['drift_ok',.03,'green']]},
   net:[['192.168.1.190:1883','mqtt','SF','1.6k','ok']]}
 };
@@ -166,10 +201,72 @@ const FEED=[
 function stColor(s){return s==='alert'?'var(--red)':s==='watch'?'var(--amber)':s==='stopped'?'var(--mut)':s==='manual'?'var(--blue)':'var(--green)'}
 function stText(s){return s==='alert'?'alert':s==='watch'?'watch':s==='stopped'?'STOPPED':s==='manual'?'manual ctrl':'normal'}
 function devStatus(k){if(S[k].stopped)return 'stopped';if(S[k].manual)return 'manual';return D[k].status}
-
 function fsm(){const r=fusedRisk();return r>.75?['Elevated','var(--red)']:r>.45?['Suspicious','var(--amber)']:['Safe','var(--green)']}
-function fusedRisk(){let m=0;for(const k in D){if(!S[k].stopped)m=Math.max(m,D[k].risk)}return +( (m*.8+.05)).toFixed(2)}
+function fusedRisk(){let m=0;for(const k in D){if(!S[k].stopped)m=Math.max(m,D[k].risk)}return +((m*.8+.05)).toFixed(2)}
 function alertCount(){let h=0,md=0;for(const k in D){const s=devStatus(k);if(s==='alert')h++;else if(s==='watch')md++}return[h,md]}
+
+async function checkLive(){
+ try{const r=await fetch(API+'/health',{signal:AbortSignal.timeout(1500)});
+  const j=await r.json();LIVE=j.status==='online'&&j.models_ready;}
+ catch(e){LIVE=false}
+ const el=document.getElementById('livebar');
+ if(el){el.className='livebar '+(LIVE?'on':'off');
+  el.innerHTML=`<span class="dot"></span>${LIVE?'LIVE MODEL CONNECTED — verdicts from the trained CATF-IDS pipeline (127.0.0.1:8000)':'Simulated replay — start the local API for live verdicts'}`}
+ const lp=document.getElementById('livepanel');if(lp)lp.style.display=LIVE?'block':'none';
+}
+
+async function analyze(payload,label){
+ if(!LIVE||BUSY)return;BUSY=true;
+ try{
+  const r=await fetch(API+'/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const j=await r.json();
+  j._label=label;j._time=now();
+  INCIDENTS.unshift(j);OPENINC=j.incident_id;
+  if(INCIDENTS.length>25)INCIDENTS.pop();
+ }catch(e){alert('Backend call failed: '+e.message)}
+ BUSY=false;render();
+}
+
+const SAMPLES={
+ normal:{label:'Normal traffic sample',p:{net_duration:0.4,net_bytes:2100,net_proto_enc:1,current_temp:4.0,phys_delta:0.3,phys_delta_abs:0.3,disk_write:1400,cpu_usage:51}},
+ attack:{label:'Attack burst sample',p:{net_duration:28,net_bytes:910000,net_proto_enc:2,current_temp:-12.0,phys_delta:9.8,phys_delta_abs:9.8,disk_write:9400,cpu_usage:97}},
+ random:()=>{const a=Math.random()>.5;return{label:a?'Random sample (attack-like)':'Random sample (normal-like)',
+  p:a?{net_duration:rnd(10,40),net_bytes:rnd(300000,999999,0),net_proto_enc:2,current_temp:rnd(-14,-8),phys_delta:rnd(6,12),phys_delta_abs:rnd(6,12),disk_write:rnd(6000,12000,0),cpu_usage:rnd(88,99,0)}
+   :{net_duration:rnd(.1,1),net_bytes:rnd(500,4000,0),net_proto_enc:1,current_temp:rnd(3,5),phys_delta:rnd(0,.8),phys_delta_abs:rnd(0,.8),disk_write:rnd(1200,1600,0),cpu_usage:rnd(40,60,0)}}}
+};
+
+function incList(){
+ if(!INCIDENTS.length)return '<div class="mu" style="font-size:12.5px">No incidents yet — send a sample above. Every result is clickable.</div>';
+ let h='';
+ for(const j of INCIDENTS){
+  const open=OPENINC===j.incident_id;
+  const ls=j.layer_scores||{};
+  let bars='';
+  for(const key of ['network','iot','log']){const o=ls[key];if(!o)continue;
+   const col=o.score>.6?'var(--red)':o.score>.3?'var(--amber)':'var(--green)';
+   bars+=`<div class="lay"><span class="ln">${o.label||key}</span><div class="track"><div class="fill" style="width:${(o.score*100).toFixed(0)}%;background:${col}"></div></div><span class="mono" style="font-size:11px;color:${col};width:44px;text-align:right">${o.score}</span></div>`}
+  h+=`<div class="inc ${open?'open':''}" onclick="OPENINC=OPENINC==='${j.incident_id}'?null:'${j.incident_id}';render()">
+   <div class="head">
+    <span class="mono mu" style="font-size:11.5px">${j._time}</span>
+    <span class="mono" style="color:var(--blue)">${j.incident_id}</span>
+    <span class="vbadge v-${j.verdict}">${j.verdict}</span>
+    <span class="mu" style="font-size:12px">${j._label}</span>
+    <span class="mono" style="margin-left:auto;font-size:12px">score ${j.fusion_score}</span>
+    <span class="mono mu" style="font-size:11px">${j.latency_ms}ms</span>
+    <i class="ti ti-chevron-${open?'up':'down'} mu"></i>
+   </div>
+   <div class="det">
+    <div style="margin-bottom:10px;color:#c9d6e6;line-height:1.6">${j.summary||''}</div>
+    ${bars}
+    <table style="margin-top:10px">
+     <tr><td class="mu">severity</td><td class="num">${j.severity||'—'}</td><td class="mu" style="padding-left:20px">confidence</td><td class="num">${j.confidence}</td></tr>
+     <tr><td class="mu">recommended action</td><td class="num">${j.recommended_action||'—'}</td><td class="mu" style="padding-left:20px">from memory</td><td class="num">${j.from_memory?'yes [MEM]':'no'}</td></tr>
+     <tr><td class="mu">top signal</td><td class="num">${j.top_signal||'—'}</td><td class="mu" style="padding-left:20px">thresholds</td><td class="num mono">τ_hi ${j.threshold_used?j.threshold_used.tau_high:'—'} / τ_lo ${j.threshold_used?j.threshold_used.tau_low:'—'}</td></tr>
+     <tr><td class="mu">engine reason</td><td colspan="3" class="num mono" style="font-size:11px">${j.reason}</td></tr>
+    </table>
+   </div></div>`}
+ return h;
+}
 
 function overview(){
  const [f,fc]=fsm();const [hi,md]=alertCount();
@@ -182,6 +279,12 @@ function overview(){
  const on=Object.keys(D).filter(k=>!S[k].stopped).length;
  document.getElementById('crumb').innerHTML='<a href="index.html">catf-ids.site</a> / SOC console';
  document.getElementById('app').innerHTML=`
+ <div class="hero">
+  <h1>CATF-IDS</h1>
+  <div class="sub">CONTEXT-ADAPTIVE THREAT DETECTION — SOC CONSOLE</div>
+  <div class="tag">DETECT TODAY, ADAPT TOMORROW</div>
+  <div><span id="livebar" class="livebar off"><span class="dot"></span>checking backend…</span></div>
+ </div>
  <div class="cards">
   <div class="card"><div class="lbl">SYSTEM STATE (FSM)</div><div class="val" style="color:${fc}">${f}</div><div class="sub">Safe → Suspicious → Elevated → Critical</div></div>
   <div class="card"><div class="lbl">FUSED RISK SCORE</div><div class="val">${fusedRisk()}</div><div class="sub">adaptive threshold 0.71</div></div>
@@ -190,8 +293,20 @@ function overview(){
  </div>
  <div class="sect">DEVICE FLEET — CLICK A DEVICE TO OPEN ITS PAGE</div>
  <div class="fleet">${tiles}</div>
+ <div id="livepanel" style="display:${LIVE?'block':'none'}">
+  <div class="sect">LIVE MODEL — INCIDENT ANALYZER (REAL PIPELINE VERDICTS)</div>
+  <div class="panel">
+   <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <button class="btn grn" onclick="analyze(SAMPLES.normal.p,SAMPLES.normal.label)">Send normal sample</button>
+    <button class="btn stp" onclick="analyze(SAMPLES.attack.p,SAMPLES.attack.label)">Send attack burst</button>
+    <button class="btn amb" onclick="const s=SAMPLES.random();analyze(s.p,s.label)">Send random sample</button>
+   </div>
+   <div id="incs">${incList()}</div>
+  </div>
+ </div>
  <div class="sect">LIVE ALERT FEED</div>
  <div class="panel feed">${feed}</div>`;
+ checkLive();
 }
 
 let logFilter='all';
@@ -216,7 +331,7 @@ function device(k){
  for(const [dst,pr,cs,by,v] of d.net){netRows+=`<tr class="mono" style="color:var(--dim)"><td>${dst}</td><td>${pr}</td><td>${cs}</td><td class="num">${by}</td><td class="num ${v==='ok'?'ok':'er'}">${v}</td></tr>`}
  let feats='';
  for(const [f,w,cl] of d.explain.feats){const col=cl==='red'?'var(--red)':cl==='amber'?'var(--amber)':'var(--green)';
-  feats+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px" class="mono" >
+  feats+=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px" class="mono">
    <span class="mu" style="width:140px;font-size:11px">${f}</span>
    <span class="bar" style="width:${Math.abs(w)*300}px;background:${col}"></span>
    <span style="color:${col};font-size:11px">${w>0?'+':''}${w}</span></div>`}
@@ -224,9 +339,10 @@ function device(k){
  for(const [tm,lv,tag,msg] of s.logs){
   if(logFilter==='anom'&&lv!=='er')continue;
   if(logFilter==='warn'&&lv!=='wr')continue;
-  logs+=`<div class="mono"><span class="mu">${tm}</span> <span class="${lv}">${tag.padEnd(7,' ')}</span> <span style="color:var(--dim)">${msg}</span></div>`}
+  logs+=`<div class="mono"><span class="mu">${tm}</span> <span class="${lv}">${tag.padEnd(7,' ')}</span> <span style="color:var(--dim)">${msg}</span></div>`}
  const chips=[['all','All'],['anom','Anomalies'],['warn','Warnings']].map(([id,lb])=>
-  `<button class="chip ${logFilter===id?'on':''}" onclick="logFilter='${id}';render()">${lb}</button>`).join(' ');
+  `<button class="chip ${logFilter===id?'on':''}" onclick="event.stopPropagation();logFilter='${id}';render()">${lb}</button>`).join(' ');
+ const liveBtn=LIVE?`<button class="btn grn" onclick="analyze(D['${k}'].live(),'${d.name} — current telemetry')" style="margin-top:10px;width:100%"><i class="ti ti-scan"></i> Analyze current telemetry with live model</button>`:'';
  document.getElementById('app').innerHTML=`
  <div class="devhead">
   <div class="devicon" style="border-color:${c}"><i class="ti ${ICONS[k]}" style="color:${c}"></i></div>
@@ -242,6 +358,7 @@ function device(k){
     <button class="btn ctl" onclick="act('${k}','ctl')">${s.manual?'Release control':'Take control'}</button>
     <button class="btn stp" onclick="act('${k}','stop')">${s.stopped?'Restart device':'STOP'}</button>
    </div>
+   ${liveBtn}
    <div style="font-size:11px;color:var(--mut);margin-top:9px">Take control → isolate the device and stream commands manually. STOP → immediate shutdown and quarantine from the network.</div>
   </div>
   <div class="panel"><h3><i class="ti ti-message-circle"></i> EXPLAIN — WHY THIS VERDICT</h3>
@@ -249,6 +366,7 @@ function device(k){
    <div style="margin-top:10px">${feats}</div>
   </div>
  </div>
+ ${INCIDENTS.filter(j=>j._label&&j._label.startsWith(d.name)).length?`<div class="panel" style="margin-top:12px"><h3><i class="ti ti-cpu-2"></i> LIVE MODEL VERDICTS FOR THIS DEVICE</h3>${incList()}</div>`:''}
  <div class="cards" style="margin-top:12px">
   <div class="card"><div class="lbl">DEVICE STATE</div><div class="val" style="color:${c};font-size:18px">${stText(st)}</div></div>
   <div class="card"><div class="lbl">DEVICE RISK</div><div class="val" style="font-size:18px">${s.stopped?'—':d.risk}</div></div>
@@ -284,9 +402,8 @@ function act(k,a){
 function render(){
  const h=location.hash.replace('#/','');
  if(h&&D[h])device(h);else overview();
- window.scrollTo(0,0);
 }
-window.addEventListener('hashchange',render);
+window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0)});
 
 setInterval(()=>{
  const h=location.hash.replace('#/','');
@@ -295,8 +412,8 @@ setInterval(()=>{
    S[h].logs.unshift([now(),h==='fridge'&&S[h].attack?'er':'ok',h==='fridge'&&S[h].attack?'ANOMALY':'OK',`telemetry ${first[0]}=${first[1]}`]);
    if(S[h].logs.length>60)S[h].logs.pop()}
   device(h)}
- else if(!h)overview();
 },3000);
+setInterval(checkLive,10000);
 
 render();
 </script>
