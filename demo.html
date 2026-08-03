@@ -118,6 +118,7 @@ footer{border-top:1px solid var(--line);padding:16px 24px;text-align:center;font
 <script>
 const API='http://127.0.0.1:8000';
 let LIVE=false, INCIDENTS=[], OPENINC=null, BUSY=false;
+let RINFO=null, SESS=null, WAVE={on:false,res:[],stop:false,n:40};
 
 const ICONS={fridge:'ti-fridge',garage:'ti-door',gps:'ti-gps',modbus:'ti-cpu',light:'ti-bulb',thermostat:'ti-temperature',weather:'ti-cloud'};
 const now=()=>new Date().toLocaleTimeString('en-GB');
@@ -205,10 +206,96 @@ function fsm(){const r=fusedRisk();return r>.75?['Elevated','var(--red)']:r>.45?
 function fusedRisk(){let m=0;for(const k in D){if(!S[k].stopped)m=Math.max(m,D[k].risk)}return +((m*.8+.05)).toFixed(2)}
 function alertCount(){let h=0,md=0;for(const k in D){const s=devStatus(k);if(s==='alert')h++;else if(s==='watch')md++}return[h,md]}
 
+async function refreshSession(){
+ try{const r=await fetch(API+'/session/state');SESS=await r.json()}catch(e){SESS=null}
+}
+
+async function runWave(){
+ if(WAVE.on){WAVE.stop=true;return}
+ if(!RINFO||!RINFO.available)return;
+ WAVE={on:true,res:[],stop:false,n:40};
+ const start=Math.floor(Math.random()*Math.max(1,RINFO.rows-WAVE.n));
+ render();
+ for(let i=0;i<WAVE.n&&!WAVE.stop;i++){
+  try{
+   const r=await fetch(API+'/replay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({index:start+i})});
+   const j=await r.json();j._time=now();
+   WAVE.res.push(j);
+   if(i%6===0)await refreshSession();
+  }catch(e){break}
+  render();
+  await new Promise(s=>setTimeout(s,550));
+ }
+ WAVE.on=false;await refreshSession();render();
+}
+
+function waveChart(){
+ const R=WAVE.res;if(!R.length)return '';
+ const W=940,H=150,pad=26;
+ const tau=R[R.length-1].threshold_used?R[R.length-1].threshold_used.tau_high:0.36;
+ const x=i=>pad+(i/Math.max(1,WAVE.n-1))*(W-pad*2);
+ const y=v=>H-pad-(v*(H-pad*2));
+ let pts=R.map((r,i)=>`${x(i).toFixed(1)},${y(r.fusion_score).toFixed(1)}`).join(' ');
+ let dots='';
+ R.forEach((r,i)=>{const ok=r.correct;const c=ok===null?'var(--blue)':ok?'var(--green)':'var(--red)';
+  dots+=`<circle cx="${x(i).toFixed(1)}" cy="${y(r.fusion_score).toFixed(1)}" r="3.4" fill="${c}"/>`;
+  if(r.true_label===1)dots+=`<rect x="${(x(i)-1).toFixed(1)}" y="${H-pad+3}" width="2" height="6" fill="var(--red)" opacity=".75"/>`;});
+ return `<svg width="100%" viewBox="0 0 ${W} ${H}" style="display:block">
+  <line x1="${pad}" y1="${y(tau)}" x2="${W-pad}" y2="${y(tau)}" stroke="var(--amber)" stroke-width="1.4" stroke-dasharray="5,4"/>
+  <text x="${W-pad-2}" y="${y(tau)-6}" text-anchor="end" font-size="11" fill="var(--amber)">τ_high ${tau.toFixed(3)}</text>
+  <line x1="${pad}" y1="${y(0)}" x2="${W-pad}" y2="${y(0)}" stroke="var(--line)"/>
+  <text x="4" y="${y(1)+4}" font-size="10" fill="var(--mut)">1.0</text>
+  <text x="4" y="${y(0)+4}" font-size="10" fill="var(--mut)">0.0</text>
+  <polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="1.8" opacity=".85"/>
+  ${dots}</svg>
+  <div style="font-size:10.5px;color:var(--mut);margin-top:2px">dot = verdict vs ground truth (green correct · red wrong) · tick below axis = row truly labelled ATTACK</div>`;
+}
+
+function wavePanel(){
+ if(!RINFO)return '';
+ if(!RINFO.available)return `<div class="sect">ATTACK WAVE</div><div class="panel"><div class="mu" style="font-size:12.5px">
+  <i class="ti ti-alert-triangle"></i> ${RINFO.reason||'test_results.csv not found'} — run the training pipeline once, then reload.</div></div>`;
+ const R=WAVE.res;
+ const done=R.length, scored=R.filter(r=>r.correct!==null);
+ const corr=scored.filter(r=>r.correct).length;
+ const acc=scored.length?(corr/scored.length*100):null;
+ const memh=done?R.filter(r=>r.from_memory).length:0;
+ const atk=R.filter(r=>r.verdict==='ATTACK').length;
+ const lat=done?(R.reduce((a,b)=>a+b.latency_ms,0)/done):0;
+ return `<div class="sect">ATTACK WAVE — REPLAY OF REAL HELD-OUT TON_IoT ROWS</div>
+ <div class="panel">
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+   <button class="btn ${WAVE.on?'amb':'stp'}" style="flex:0 0 220px" onclick="runWave()">
+    <i class="ti ti-${WAVE.on?'player-stop':'wave-sine'}"></i> ${WAVE.on?'Stop wave':'Launch attack wave'}</button>
+   <span class="mu" style="font-size:11.5px">${RINFO.rows} held-out rows · ${RINFO.attack_rows} attack / ${RINFO.normal_rows} normal · full feature vector (net ${RINFO.feature_coverage.net}, iot ${RINFO.feature_coverage.iot}, log ${RINFO.feature_coverage.log})</span>
+  </div>
+  ${done?`<div class="cards" style="margin-bottom:10px">
+   <div class="card"><div class="lbl">EVENTS REPLAYED</div><div class="val" style="font-size:19px">${done} / ${WAVE.n}</div></div>
+   <div class="card"><div class="lbl">ACCURACY VS GROUND TRUTH</div><div class="val" style="font-size:19px;color:${acc>=80?'var(--green)':acc>=60?'var(--amber)':'var(--red)'}">${acc===null?'—':acc.toFixed(1)+'%'}</div><div class="sub">${corr}/${scored.length} correct</div></div>
+   <div class="card"><div class="lbl">FLAGGED ATTACK</div><div class="val" style="font-size:19px;color:var(--red)">${atk}</div></div>
+   <div class="card"><div class="lbl">MEMORY HITS · AVG LATENCY</div><div class="val" style="font-size:19px">${memh} · ${lat.toFixed(1)}ms</div></div>
+  </div>${waveChart()}`:'<div class="mu" style="font-size:12.5px">Streams 40 consecutive held-out rows through the live pipeline with their complete feature vectors, and scores every verdict against the true label.</div>'}
+ </div>
+ ${SESS?`<div class="panel" style="margin-top:10px">
+  <h3><i class="ti ti-shield-check"></i> SESSION TRANSPARENCY — DRIFT SINCE TRAINING</h3>
+  <table style="font-size:12px">
+   <tr><td class="mu">τ_high — at training / now</td><td class="num mono">${SESS.tau_high_at_training} → <span style="color:${SESS.tau_high_now!==SESS.tau_high_at_training?'var(--amber)':'var(--txt)'}">${SESS.tau_high_now}</span></td>
+       <td class="mu" style="padding-left:18px">events this session</td><td class="num mono">${SESS.events_this_session}</td></tr>
+   <tr><td class="mu">τ_low — at training / now</td><td class="num mono">${SESS.tau_low_at_training} → <span style="color:${SESS.tau_low_now!==SESS.tau_low_at_training?'var(--amber)':'var(--txt)'}">${SESS.tau_low_now}</span></td>
+       <td class="mu" style="padding-left:18px">memory entries</td><td class="num mono">${SESS.memory_entries}</td></tr>
+   <tr><td class="mu">online retrains this session</td><td class="num mono">${SESS.retrains_this_session}</td>
+       <td class="mu" style="padding-left:18px">models on disk modified</td><td class="num mono" style="color:${SESS.models_on_disk_modified?'var(--red)':'var(--green)'}">${SESS.models_on_disk_modified?'YES':'no'}</td></tr>
+  </table>
+  <div style="font-size:10.5px;color:var(--mut);margin-top:6px">${SESS.demo_no_persist?'Demo mode: adaptation runs live and is shown above, but the evaluated models on disk are write-protected — restarting restores them exactly.':'Live mode: online learning may update the saved models.'}</div>
+ </div>`:''}`;
+}
+
 async function checkLive(){
  try{const r=await fetch(API+'/health',{signal:AbortSignal.timeout(1500)});
   const j=await r.json();LIVE=j.status==='online'&&j.models_ready;}
  catch(e){LIVE=false}
+ if(LIVE&&!RINFO){try{const r=await fetch(API+'/replay/info');RINFO=await r.json()}catch(e){RINFO={available:false,reason:'replay endpoint not available — backend needs v5'}}}
+ if(LIVE&&!SESS)await refreshSession();
  const el=document.getElementById('livebar');
  if(el){el.className='livebar '+(LIVE?'on':'off');
   el.innerHTML=`<span class="dot"></span>${LIVE?'LIVE MODEL CONNECTED — verdicts from the trained CATF-IDS pipeline (127.0.0.1:8000)':'Simulated replay — start the local API for live verdicts'}`}
@@ -247,10 +334,11 @@ const SAMPLES={
    :{net_duration:rnd(.1,1),net_bytes:rnd(500,4000,0),net_proto_enc:1,current_temp:rnd(3,5),phys_delta:rnd(0,.8),phys_delta_abs:rnd(0,.8),disk_write:rnd(1200,1600,0),cpu_usage:rnd(40,60,0)}}}
 };
 
-function incList(){
- if(!INCIDENTS.length)return '<div class="mu" style="font-size:12.5px">No incidents yet — send a sample above. Every result is clickable.</div>';
+function incList(list){
+ const SRC=list||INCIDENTS;
+ if(!SRC.length)return '<div class="mu" style="font-size:12.5px">No incidents yet — send a sample above. Every result is clickable.</div>';
  let h='';
- for(const j of INCIDENTS){
+ for(const j of SRC){
   const open=OPENINC===j.incident_id;
   const ls=j.layer_scores||{};
   let bars='';
@@ -262,7 +350,8 @@ function incList(){
     <span class="mono mu" style="font-size:11.5px">${j._time}</span>
     <span class="mono" style="color:var(--blue)">${j.incident_id}</span>
     <span class="vbadge v-${j.verdict}">${j.verdict}</span>
-    <span class="mu" style="font-size:12px">${j._label}</span>
+    ${j.true_verdict?`<span style="font-size:11px;color:${j.correct?'var(--green)':'var(--red)'}"><i class="ti ti-${j.correct?'check':'x'}"></i> truth ${j.true_verdict}</span>`:''}
+    <span class="mu" style="font-size:12px">${j._label||(j.row_index!==undefined?'held-out row #'+j.row_index:'')}</span>
     <span class="mono" style="margin-left:auto;font-size:12px">score ${j.fusion_score}</span>
     <span class="mono mu" style="font-size:11px">${j.latency_ms}ms</span>
     <i class="ti ti-chevron-${open?'up':'down'} mu"></i>
@@ -319,8 +408,11 @@ function overview(){
  <div class="sect">DEVICE FLEET — CLICK A DEVICE TO OPEN ITS PAGE</div>
  <div class="fleet">${tiles}</div>
  <div id="livepanel" style="display:${LIVE?'block':'none'}">
-  <div class="sect">LIVE MODEL — INCIDENT ANALYZER (REAL PIPELINE VERDICTS)</div>
+  ${wavePanel()}
+  ${WAVE.res.length?`<div class="sect">WAVE EVENTS — CLICK ANY EVENT FOR ITS FULL EXPLANATION</div><div class="panel">${incList(WAVE.res.slice().reverse())}</div>`:''}
+  <div class="sect">MANUAL PROBE — SINGLE SYNTHETIC READING</div>
   <div class="panel">
+   <div style="font-size:11.5px;color:var(--amber);margin-bottom:10px"><i class="ti ti-info-circle"></i> These are hand-built readings covering only the 8 raw telemetry fields the endpoint accepts — the derived statistical, signature and physics features are unavailable for a single isolated event, so treat these as an interface probe, not as evidence. The attack wave above is the full-fidelity test.</div>
    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap">
     <button class="btn grn" onclick="analyze(SAMPLES.normal.p,SAMPLES.normal.label)">Send normal sample</button>
     <button class="btn stp" onclick="analyze(SAMPLES.attack.p,SAMPLES.attack.label)">Send attack burst</button>
