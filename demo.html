@@ -223,8 +223,20 @@ async function analyze(payload,label){
   j._label=label;j._time=now();
   INCIDENTS.unshift(j);OPENINC=j.incident_id;
   if(INCIDENTS.length>25)INCIDENTS.pop();
+  narrate(j);
  }catch(e){alert('Backend call failed: '+e.message)}
  BUSY=false;render();
+}
+
+async function narrate(j){
+ j._narr='…';
+ try{
+  const {_label,_time,_narr,_nsrc,...clean}=j;
+  const r=await fetch(API+'/narrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({incident:clean})});
+  const n=await r.json();
+  j._narr=n.narration;j._nsrc=n.source;
+ }catch(e){j._narr=null}
+ render();
 }
 
 const SAMPLES={
@@ -257,7 +269,19 @@ function incList(){
    </div>
    <div class="det">
     <div style="margin-bottom:10px;color:#c9d6e6;line-height:1.6">${j.summary||''}</div>
+    ${j._narr!==undefined?`<div style="border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:12px;background:rgba(127,180,232,.04)">
+     <div style="font-size:10.5px;color:var(--mut);letter-spacing:1px;margin-bottom:5px"><i class="ti ti-sparkles"></i> ${j._nsrc==='llm'?'AI NARRATION (LOCAL LLM — NARRATES ONLY, NEVER DECIDES)':j._narr==='…'?'GENERATING NARRATION…':'NARRATION (TEMPLATE FALLBACK)'}</div>
+     <div style="font-size:12.5px;color:#c9d6e6;line-height:1.6">${j._narr===null?'<span class="mu">narration unavailable</span>':j._narr}</div></div>`:''}
     ${bars}
+    ${j.contributions&&j.contributions.features&&j.contributions.features.length?(()=>{
+     const fs2=j.contributions.features;const mx=Math.max(...fs2.map(f=>Math.abs(f.contribution)))||1;
+     let h2='<div style="font-size:10.5px;color:var(--mut);letter-spacing:1px;margin:12px 0 6px">FEATURE CONTRIBUTIONS — EXACT (FUSION LR, LOG-ODDS)</div>';
+     for(const f of fs2){const w=Math.abs(f.contribution)/mx*100;const col=f.contribution>0?'var(--red)':'var(--green)';
+      h2+=`<div class="lay"><span class="ln mono" style="font-size:11px">${f.feature} = ${f.value}</span><div class="track"><div class="fill" style="width:${w.toFixed(0)}%;background:${col}"></div></div><span class="mono" style="font-size:11px;color:${col};width:58px;text-align:right">${f.contribution>0?'+':''}${f.contribution}</span></div>`}
+     h2+='<div style="font-size:10.5px;color:var(--mut);margin-top:4px">red pushes toward ATTACK · green toward NORMAL · sums (with intercept '+j.contributions.intercept+') to the exact fusion logit</div>';
+     return h2})():''}
+    ${j.counterfactual?`<div style="margin-top:12px;border-left:3px solid ${j.counterfactual.applicable?'var(--amber)':'var(--line)'};padding:6px 10px;font-size:12px;color:${j.counterfactual.applicable?'var(--amber)':'var(--mut)'}">
+     <i class="ti ti-arrows-exchange"></i> COUNTERFACTUAL: ${j.counterfactual.applicable?j.counterfactual.statement:j.counterfactual.note}</div>`:''}
     <table style="margin-top:10px">
      <tr><td class="mu">severity</td><td class="num">${j.severity||'—'}</td><td class="mu" style="padding-left:20px">confidence</td><td class="num">${j.confidence}</td></tr>
      <tr><td class="mu">recommended action</td><td class="num">${j.recommended_action||'—'}</td><td class="mu" style="padding-left:20px">from memory</td><td class="num">${j.from_memory?'yes [MEM]':'no'}</td></tr>
