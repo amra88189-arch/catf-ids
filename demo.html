@@ -319,7 +319,8 @@ async function analyze(payload,label){
 }
 
 async function narrate(j){
- j._narr='…';
+ if(j._narr!==undefined)return;
+ j._narr='…';render();
  try{
   const {_label,_time,_narr,_nsrc,...clean}=j;
   const r=await fetch(API+'/narrate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({incident:clean})});
@@ -327,6 +328,22 @@ async function narrate(j){
   j._narr=n.narration;j._nsrc=n.source;
  }catch(e){j._narr=null}
  render();
+}
+
+function findInc(id){
+ return WAVE.res.find(r=>r.incident_id===id)||INCIDENTS.find(r=>r.incident_id===id)||null;
+}
+
+function toggleInc(id){
+ const opening=OPENINC!==id;
+ OPENINC=opening?id:null;
+ const j=findInc(id);
+ if(opening&&j)narrate(j);else render();
+}
+
+async function narrateAllAttacks(){
+ const atk=WAVE.res.filter(r=>r.verdict==='ATTACK'&&r._narr===undefined);
+ for(const j of atk.slice(0,10)){await narrate(j)}
 }
 
 const SAMPLES={
@@ -348,7 +365,7 @@ function incList(list){
   for(const key of ['network','iot','log']){const o=ls[key];if(!o)continue;
    const col=o.score>.6?'var(--red)':o.score>.3?'var(--amber)':'var(--green)';
    bars+=`<div class="lay"><span class="ln">${o.label||key}</span><div class="track"><div class="fill" style="width:${(o.score*100).toFixed(0)}%;background:${col}"></div></div><span class="mono" style="font-size:11px;color:${col};width:44px;text-align:right">${o.score}</span></div>`}
-  h+=`<div class="inc ${open?'open':''}" onclick="OPENINC=OPENINC==='${j.incident_id}'?null:'${j.incident_id}';render()">
+  h+=`<div class="inc ${open?'open':''}" onclick="toggleInc('${j.incident_id}')">
    <div class="head">
     <span class="mono mu" style="font-size:11.5px">${j._time}</span>
     <span class="mono" style="color:var(--blue)">${j.incident_id}</span>
@@ -371,6 +388,7 @@ function incList(list){
      for(const f of fs2){const w=Math.abs(f.contribution)/mx*100;const col=f.contribution>0?'var(--red)':'var(--green)';
       h2+=`<div class="lay"><span class="ln mono" style="font-size:11px">${f.feature} = ${f.value}</span><div class="track"><div class="fill" style="width:${w.toFixed(0)}%;background:${col}"></div></div><span class="mono" style="font-size:11px;color:${col};width:58px;text-align:right">${f.contribution>0?'+':''}${f.contribution}</span></div>`}
      h2+='<div style="font-size:10.5px;color:var(--mut);margin-top:4px">red pushes toward ATTACK · green toward NORMAL · sums (with intercept '+j.contributions.intercept+') to the exact fusion logit</div>';
+     if(j.from_memory)h2+='<div style="font-size:10.5px;color:var(--amber);margin-top:4px"><i class="ti ti-alert-triangle"></i> This verdict was served from the experience cache, so the score shown is the cached confidence. The bars above describe the live evidence vector for this event, not the cached decision path.</div>';
      return h2})():''}
     ${j.counterfactual?`<div style="margin-top:12px;border-left:3px solid ${j.counterfactual.applicable?'var(--amber)':'var(--line)'};padding:6px 10px;font-size:12px;color:${j.counterfactual.applicable?'var(--amber)':'var(--mut)'}">
      <i class="ti ti-arrows-exchange"></i> COUNTERFACTUAL: ${j.counterfactual.applicable?j.counterfactual.statement:j.counterfactual.note}</div>`:''}
@@ -412,7 +430,9 @@ function overview(){
  <div class="fleet">${tiles}</div>
  <div id="livepanel" style="display:${LIVE?'block':'none'}">
   ${wavePanel()}
-  ${WAVE.res.length?`<div class="sect">WAVE EVENTS — CLICK ANY EVENT FOR ITS FULL EXPLANATION</div><div class="panel">${incList(WAVE.res.slice().reverse())}</div>`:''}
+  ${WAVE.res.length?`<div class="sect">WAVE EVENTS — CLICK ANY EVENT FOR ITS FULL EXPLANATION + AI NARRATION</div><div class="panel">
+   <div style="margin-bottom:10px"><button class="btn amb" style="flex:0 0 260px" onclick="event.stopPropagation();narrateAllAttacks()"><i class="ti ti-sparkles"></i> Narrate attack verdicts (AI)</button></div>
+   ${incList(WAVE.res.slice().reverse())}</div>`:''}
   <div class="sect">MANUAL PROBE — SINGLE SYNTHETIC READING</div>
   <div class="panel">
    <div style="font-size:11.5px;color:var(--amber);margin-bottom:10px"><i class="ti ti-info-circle"></i> These are hand-built readings covering only the 8 raw telemetry fields the endpoint accepts — the derived statistical, signature and physics features are unavailable for a single isolated event, so treat these as an interface probe, not as evidence. The attack wave above is the full-fidelity test.</div>
