@@ -119,7 +119,7 @@ footer{border-top:1px solid var(--line);padding:16px 24px;text-align:center;font
 const API='http://127.0.0.1:8000';
 let LIVE=false, INCIDENTS=[], OPENINC=null, BUSY=false;
 let RINFO=null, SESS=null, WAVE={on:false,res:[],stop:false,n:40,mem:true};
-let COP={pending:null,log:[],busy:false,text:''};
+let COP={pending:null,msgs:[],busy:false};
 
 const ICONS={fridge:'ti-fridge',garage:'ti-door',gps:'ti-gps',modbus:'ti-cpu',light:'ti-bulb',thermostat:'ti-temperature',weather:'ti-cloud'};
 const now=()=>new Date().toLocaleTimeString('en-GB');
@@ -209,86 +209,151 @@ function alertCount(){let h=0,md=0;for(const k in D){const s=devStatus(k);if(s==
 
 const DEVNAME={fridge:'Smart fridge',garage:'Garage door',gps:'GPS tracker',modbus:'Modbus unit',light:'Motion light',thermostat:'Thermostat',weather:'Weather station'};
 
-function copLog(msg,kind){COP.log.unshift({t:now(),msg:msg,k:kind||'info'});if(COP.log.length>12)COP.log.pop()}
+
+function snapshot(){
+ const devs=[];
+ for(const k in D){const st=devStatus(k);
+  devs.push({key:k,name:D[k].name,state:stText(st),risk:S[k].stopped?null:D[k].risk,trust:D[k].trust})}
+ const R=WAVE.res, scored=R.filter(r=>r.correct!==null);
+ const tp=scored.filter(r=>r.true_label===1&&r.verdict==='ATTACK').length;
+ const fp=scored.filter(r=>r.true_label===0&&r.verdict==='ATTACK').length;
+ const fn=scored.filter(r=>r.true_label===1&&r.verdict!=='ATTACK').length;
+ const last=R[R.length-1]||INCIDENTS[0]||null;
+ devs.sort((a,b)=>(b.risk||0)-(a.risk||0));
+ const live=devs.filter(d=>d.risk!==null);
+ return {devices:devs,
+  riskiest_device:live.length?live[0].name+' (risk '+live[0].risk+')':'none',
+  safest_device:live.length?live[live.length-1].name+' (risk '+live[live.length-1].risk+')':'none',
+  devices_in_alert:devs.filter(d=>d.state==='alert').map(d=>d.name).join(', ')||'none',
+  devices_stopped:devs.filter(d=>d.state==='STOPPED').map(d=>d.name).join(', ')||'none',
+  lowest_trust_device:(function(){const c=live.slice().sort((a,b)=>a.trust-b.trust);return c.length?c[0].name+' (trust '+c[0].trust+')':'none'})(),
+  note_devices_sorted:'device list is sorted by risk, highest first',
+  online:Object.keys(D).filter(k=>!S[k].stopped).length,total:7,
+  fsm:fsm()[0],fused_risk:fusedRisk(),session:SESS||{},
+  wave:R.length?{count:R.length,mem_enabled:WAVE.mem,
+   accuracy:scored.length?+(scored.filter(r=>r.correct).length/scored.length*100).toFixed(1):null,
+   precision:(tp+fp)?+(tp/(tp+fp)*100).toFixed(0):null,
+   recall:(tp+fn)?+(tp/(tp+fn)*100).toFixed(0):null,
+   memory_hits:R.filter(r=>r.from_memory).length}:{},
+  last_incident:last?{verdict:last.verdict,true_verdict:last.true_verdict||null,
+   fusion_score:last.fusion_score,from_memory:last.from_memory,
+   top_signal:last.top_signal&&last.top_signal.modality?last.top_signal.modality:null,
+   reason:last.reason}:{}};
+}
 
 async function copSend(){
  const el=document.getElementById('copin');
  const text=(el?el.value:'').trim();
  if(!text||COP.busy)return;
- COP.busy=true;COP.text=text;COP.pending=null;render();
+ COP.msgs.push({role:'user',text:text});
+ COP.busy=true;COP.pending=null;
+ if(el)el.value='';
+ render();
  try{
-  const r=await fetch(API+'/copilot/parse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:text})});
-  const p=await r.json();p._text=text;
-  if(p.action==='unknown'){copLog('Could not map "'+text+'" to a known action — '+(p.reasoning||''),'warn')}
-  else{COP.pending=p}
- }catch(e){copLog('Copilot request failed: '+e.message,'err')}
+  const r=await fetch(API+'/copilot/chat',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({messages:COP.msgs.slice(-8),state:snapshot()})});
+  const p=await r.json();
+  COP.msgs.push({role:'copilot',text:p.reply||'(no reply)',tier:p.tier});
+  if(p.action==='show_logs'&&p.device&&D[p.device]){
+   const n=Math.max(1,Math.min(p.count||10,50));
+   const rows=(S[p.device].logs||[]).slice(0,n);
+   COP.msgs.push({role:'copilot',tier:'query',logs:rows,dev:p.device,
+    text:rows.length?'':'No log entries recorded for '+DEVNAME[p.device]+' yet.'});
+  }
+  else if(p.requires_confirmation)COP.pending=p;
+ }catch(e){COP.msgs.push({role:'copilot',text:'Request failed: '+e.message,tier:'none'})}
  COP.busy=false;render();
 }
 
-function copCancel(){COP.pending=null;copLog('Proposed action cancelled by operator.','info');render()}
+function copCancel(){
+ COP.pending=null;
+ COP.msgs.push({role:'copilot',text:'Cancelled — nothing was executed.',tier:'system'});
+ render();
+}
 
 async function copConfirm(){
  const p=COP.pending;if(!p)return;
  COP.pending=null;
- const a=p.action, k=p.device;
+ const a=p.action,k=p.device;let done='';
  if(a==='stop_all'){
   let n=0;for(const d in D){if(!S[d].stopped){S[d].stopped=true;S[d].manual=false;
-   S[d].logs.unshift([now(),'er','ACTION','STOP issued from copilot — device shut down and quarantined']);n++}}
+   S[d].logs.unshift([now(),'er','ACTION','STOP issued from copilot — shut down and quarantined']);n++}}
   S.fridge.attack=false;D.fridge.status='normal';D.fridge.risk=.15;
-  copLog('STOPPED all devices ('+n+' shut down and quarantined).','err');
+  done='Executed — '+n+' devices stopped and quarantined. Fleet now 0/7 online.';
  }else if(a==='stop_device'&&k){S[k].stopped=true;S[k].manual=false;
-  S[k].logs.unshift([now(),'er','ACTION','STOP issued from copilot — device shut down and quarantined']);
+  S[k].logs.unshift([now(),'er','ACTION','STOP issued from copilot — shut down and quarantined']);
   if(k==='fridge'){S.fridge.attack=false;D.fridge.status='normal';D.fridge.risk=.15}
-  copLog('STOPPED '+DEVNAME[k]+' — quarantined from the network.','err');
+  done='Executed — '+DEVNAME[k]+' stopped and quarantined.';
  }else if(a==='isolate_device'&&k){S[k].manual=true;
   S[k].logs.unshift([now(),'wr','ACTION','manual control taken from copilot — device isolated']);
-  copLog('Took manual control of '+DEVNAME[k]+'.','warn');
+  done='Executed — manual control taken of '+DEVNAME[k]+'.';
  }else if(a==='restart_device'&&k){S[k].stopped=false;
-  S[k].logs.unshift([now(),'ok','OK','device restarted from copilot — rejoining fleet']);
-  copLog('Restarted '+DEVNAME[k]+'.','ok');
+  S[k].logs.unshift([now(),'ok','OK','device restarted from copilot']);
+  done='Executed — '+DEVNAME[k]+' restarted.';
  }else if(a==='release_device'&&k){S[k].manual=false;
   S[k].logs.unshift([now(),'ok','OK','manual control released from copilot']);
-  copLog('Released '+DEVNAME[k]+' back to autonomous mode.','ok');
- }else if(a==='run_wave'){copLog('Launching replay wave (model only, no cache).','info');render();runWave(false);return;
- }else if(a==='show_status'){
-  const [f]=fsm();const on=Object.keys(D).filter(x=>!S[x].stopped).length;
-  copLog('Status — FSM '+f+' · '+on+'/7 devices online · '+(SESS?SESS.events_this_session+' events this session · τ_high '+SESS.tau_high_now:'')+'.','info');
+  done='Executed — '+DEVNAME[k]+' released to autonomous mode.';
+ }else if(a==='open_device'&&k){COP.msgs.push({role:'copilot',text:'Opening '+DEVNAME[k]+'.',tier:'system'});
+  location.hash='#/'+k;return;
+ }else if(a==='run_wave'){COP.msgs.push({role:'copilot',text:'Launching replay wave (model only, no cache).',tier:'system'});
+  render();runWave(false);return;
  }else if(a==='set_context'){
-  try{const r=await fetch(API+'/intent/apply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({policy:p.context_text||p._text})});
+  try{const r=await fetch(API+'/intent/apply',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({policy:p.context_text||(COP.msgs.filter(m=>m.role==='user').pop()||{}).text||''})});
    const j=await r.json();
-   copLog('Context policy applied — '+j.action+(j.matched?'':' (no keyword matched, context unchanged)'),j.matched?'ok':'warn');
-  }catch(e){copLog('Context request failed: '+e.message,'err')}
- }
- const inp=document.getElementById('copin');if(inp)inp.value='';
+   done='Context applied on the backend — '+j.action+(j.matched?'':' (no keyword matched, context unchanged)');
+  }catch(e){done='Context request failed: '+e.message}
+ }else{done='Nothing to execute for this action.'}
+ COP.msgs.push({role:'copilot',text:done,tier:'system'});
  render();
 }
 
 function copPanel(){
  if(!LIVE)return '';
  const p=COP.pending;
- return `<div class="sect">SOC COPILOT — NATURAL LANGUAGE OPERATIONS</div>
+ const bubbles=COP.msgs.slice(-10).map(m=>{
+  const me=m.role==='user';
+  if(m.logs&&m.logs.length){
+   const lines=m.logs.map(([tm,lv,tag,msg])=>
+    `<div class="mono" style="font-size:11px;line-height:1.85"><span class="mu">${tm}</span> <span class="${lv}">${tag}</span> <span style="color:var(--dim)">${String(msg).replace(/</g,'&lt;')}</span></div>`).join('');
+   return `<div style="display:flex;justify-content:flex-start;margin-bottom:8px">
+    <div style="max-width:94%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 12px">
+     <div style="font-size:9.5px;color:var(--mut);letter-spacing:1px;margin-bottom:5px">READ-ONLY QUERY · ${DEVNAME[m.dev]||m.dev} · ${m.logs.length} ENTRIES</div>
+     ${lines}</div></div>`}
+  return `<div style="display:flex;justify-content:${me?'flex-end':'flex-start'};margin-bottom:8px">
+   <div style="max-width:78%;background:${me?'rgba(127,180,232,.12)':'var(--panel2)'};border:1px solid ${me?'var(--blue)':'var(--line)'};
+    border-radius:10px;padding:8px 12px;font-size:13px;line-height:1.55;color:${me?'var(--txt)':'#c9d6e6'}">
+    ${!me&&m.tier?`<div style="font-size:9.5px;color:var(--mut);letter-spacing:1px;margin-bottom:3px">${m.tier==='deterministic'?'DETERMINISTIC — NO LLM':m.tier==='llm'?'LOCAL LLM':m.tier==='system'?'SYSTEM':m.tier==='query'?'READ-ONLY QUERY':''}</div>`:''}
+    ${(m.text||'').replace(/</g,'&lt;')}</div></div>`}).join('');
+ return `<div class="sect">SOC COPILOT — TALK TO YOUR IDS</div>
  <div class="panel">
+  ${COP.msgs.length?`<div style="max-height:340px;overflow-y:auto;margin-bottom:12px">${bubbles}</div>`:
+   `<div class="mu" style="font-size:12.5px;margin-bottom:12px">Ask about the fleet, or give an operational instruction. Try:
+    <span style="color:var(--blue)">"which device is riskiest?"</span> ·
+    <span style="color:var(--blue)">"why is the fridge flagged?"</span> ·
+    <span style="color:var(--blue)">"how did the last wave do?"</span> ·
+    <span style="color:var(--blue)">"stop the fridge"</span> ·
+    <span style="color:var(--blue)">"we are in maintenance mode"</span></div>`}
+  ${COP.busy?'<div class="mu" style="font-size:12px;margin-bottom:10px"><i class="ti ti-loader"></i> thinking…</div>':''}
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-   <input id="copin" placeholder="e.g. stop the fridge · isolate the gps tracker · we are in maintenance mode · run a wave · status"
+   <input id="copin" placeholder="Ask a question or give an instruction…" autocomplete="off"
     style="flex:1;min-width:280px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:9px;padding:11px 14px;font-family:inherit;font-size:13.5px"
-    onkeydown="if(event.key==='Enter'){event.preventDefault();copSend()}" value="${COP.busy?COP.text:''}">
-   <button class="btn ctl" style="flex:0 0 130px" onclick="copSend()">${COP.busy?'Parsing…':'Send'}</button>
+    onkeydown="if(event.key==='Enter'){event.preventDefault();copSend()}">
+   <button class="btn ctl" style="flex:0 0 110px" onclick="copSend()">Send</button>
+   ${COP.msgs.length?`<button class="btn amb" style="flex:0 0 90px" onclick="COP.msgs=[];COP.pending=null;render()">Clear</button>`:''}
   </div>
-  <div style="font-size:10.5px;color:var(--mut);margin-top:8px">
-   <i class="ti ti-shield-lock"></i> Shutdown and isolation commands are matched by deterministic patterns with no LLM in the path. Ambiguous phrasing falls back to the local LLM, which only <b>proposes</b> — every action requires operator confirmation below.</div>
   ${p?`<div style="margin-top:12px;border:1px solid ${p.destructive?'var(--red)':'var(--blue)'};background:${p.destructive?'rgba(224,86,74,.07)':'rgba(127,180,232,.06)'};border-radius:9px;padding:12px 14px">
-   <div style="font-size:11px;color:var(--mut);letter-spacing:1px;margin-bottom:6px">PROPOSED ACTION — AWAITING CONFIRMATION</div>
-   <div style="font-size:14px;margin-bottom:4px;color:${p.destructive?'var(--red)':'var(--txt)'}">
+   <div style="font-size:11px;color:var(--mut);letter-spacing:1px;margin-bottom:6px">PROPOSED ACTION — AWAITING YOUR CONFIRMATION</div>
+   <div style="font-size:14px;margin-bottom:5px;color:${p.destructive?'var(--red)':'var(--txt)'}">
     ${p.destructive?'<i class="ti ti-alert-triangle"></i> ':''}${p.description}${p.device?' — '+DEVNAME[p.device]:''}</div>
-   <div class="mono" style="font-size:11px;color:var(--dim)">parsed by: ${p.tier==='deterministic'?'deterministic pattern (no LLM)':'local LLM proposal'} · ${p.reasoning||''}</div>
-   ${p.action==='stop_all'?'<div style="font-size:12px;color:var(--red);margin-top:6px">This shuts down and quarantines every device in the fleet.</div>':''}
+   ${p.consequence?`<div style="font-size:12.5px;color:#c9d6e6;line-height:1.55;margin-bottom:6px">${p.consequence}</div>`:''}
+   <div class="mono" style="font-size:10.5px;color:var(--dim)">${p.tier==='deterministic'?'matched by deterministic pattern — no language model in this path':'proposed by the local model — nothing runs until you confirm'}</div>
    <div style="display:flex;gap:10px;margin-top:12px">
     <button class="btn ${p.destructive?'stp':'grn'}" style="flex:0 0 190px" onclick="copConfirm()"><i class="ti ti-check"></i> Confirm and execute</button>
-    <button class="btn amb" style="flex:0 0 120px" onclick="copCancel()">Cancel</button>
+    <button class="btn amb" style="flex:0 0 110px" onclick="copCancel()">Cancel</button>
    </div></div>`:''}
-  ${COP.log.length?`<div style="margin-top:12px"><div style="font-size:10.5px;color:var(--mut);letter-spacing:1px;margin-bottom:6px">COPILOT ACTIVITY</div>
-   ${COP.log.map(l=>`<div class="mono" style="font-size:11.5px;line-height:1.9"><span class="mu">${l.t}</span> <span style="color:${l.k==='err'?'var(--red)':l.k==='warn'?'var(--amber)':l.k==='ok'?'var(--green)':'var(--dim)'}">${l.msg}</span></div>`).join('')}</div>`:''}
-  <div style="font-size:10.5px;color:var(--mut);margin-top:10px"><i class="ti ti-info-circle"></i> Device actions operate on the simulated TON_IoT fleet in this console. Context policies are sent to the live backend and genuinely change how incoming signals are scaled.</div>
+  <div style="font-size:10.5px;color:var(--mut);margin-top:10px"><i class="ti ti-shield-lock"></i>
+   Shutdown and isolation match deterministic patterns with no LLM in the path. The copilot answers from live system state only and never executes anything itself — every action waits for your confirmation. Device actions affect the simulated fleet; context policies are sent to the live backend.</div>
  </div>`;
 }
 
