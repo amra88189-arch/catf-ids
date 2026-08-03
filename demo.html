@@ -291,11 +291,14 @@ function wavePanel(){
 }
 
 async function checkLive(){
+ const was=LIVE;let changed=false;
  try{const r=await fetch(API+'/health',{signal:AbortSignal.timeout(1500)});
   const j=await r.json();LIVE=j.status==='online'&&j.models_ready;}
  catch(e){LIVE=false}
- if(LIVE&&!RINFO){try{const r=await fetch(API+'/replay/info');RINFO=await r.json()}catch(e){RINFO={available:false,reason:'replay endpoint not available — backend needs v5'}}}
- if(LIVE&&!SESS)await refreshSession();
+ if(was!==LIVE)changed=true;
+ if(LIVE&&!RINFO){changed=true;try{const r=await fetch(API+'/replay/info');RINFO=await r.json()}catch(e){RINFO={available:false,reason:'replay endpoint not available — restart the backend with ids_complete_v5.py'}}}
+ if(LIVE&&!SESS){changed=true;await refreshSession()}
+ if(changed&&!location.hash.replace('#/','')&&!WAVE.on){render();return}
  const el=document.getElementById('livebar');
  if(el){el.className='livebar '+(LIVE?'on':'off');
   el.innerHTML=`<span class="dot"></span>${LIVE?'LIVE MODEL CONNECTED — verdicts from the trained CATF-IDS pipeline (127.0.0.1:8000)':'Simulated replay — start the local API for live verdicts'}`}
